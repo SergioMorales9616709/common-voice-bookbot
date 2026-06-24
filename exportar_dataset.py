@@ -144,11 +144,12 @@ def main() -> None:
     )
     parser.add_argument("--speaker", required=True, help="speaker_id de MLS (ej: 2138)")
     parser.add_argument(
-        "--output", default="./data/dataset",
-        help="Directorio de salida (default: ./data/dataset)"
+        "--output", default=None,
+        help="Directorio de salida (default: ./data/<speaker_id>)"
     )
     args = parser.parse_args()
-    export_speaker(args.speaker, Path(args.output))
+    output = Path(args.output) if args.output else Path("./data") / args.speaker
+    export_speaker(args.speaker, output)
 
 
 if __name__ == "__main__":

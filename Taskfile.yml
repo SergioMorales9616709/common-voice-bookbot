@@ -30,18 +30,11 @@ tasks:
       - uv run probar_speaker.py --speaker {{.SPEAKER}} --n {{.N}} --full-scan
 
   exportar:
-    desc: "Export a speaker's clips as a LJSpeech dataset — usage: task exportar SPEAKER=<id>"
+    desc: "Export a speaker's clips to ./data/<speaker_id>/ — usage: task exportar SPEAKER=<id>"
     requires:
       vars: [SPEAKER]
     cmds:
       - uv run exportar_dataset.py --speaker {{.SPEAKER}}
-
-  exportar-custom:
-    desc: "Export with custom output dir — usage: task exportar-custom SPEAKER=<id> OUTPUT=./my/path"
-    requires:
-      vars: [SPEAKER, OUTPUT]
-    cmds:
-      - uv run exportar_dataset.py --speaker {{.SPEAKER}} --output {{.OUTPUT}}
 
   test:
     desc: Run unit tests (no network required)
