@@ -1,16 +1,36 @@
 import argparse
+import io
 import sys
 from pathlib import Path
 
+import av
+import numpy as np
 from dotenv import load_dotenv
-from datasets import load_dataset
-
-load_dotenv()
+from datasets import load_dataset, Audio
 from tqdm import tqdm
 
 from audio_utils import process_clip, save_wav
 
+load_dotenv()
+
 MIN_DURATION_SECONDS = 0.5
+
+
+def decode_audio_bytes(audio_bytes: bytes) -> tuple[np.ndarray, int]:
+    """Decode raw audio bytes (any format including Opus) to float32 mono array."""
+    container = av.open(io.BytesIO(audio_bytes), metadata_errors="ignore")
+    stream = next(s for s in container.streams if s.type == "audio")
+    sr = stream.sample_rate
+    resampler = av.AudioResampler(format="fltp", layout="mono", rate=sr)
+    chunks = []
+    for frame in container.decode(stream):
+        for out in resampler.resample(frame):
+            chunks.append(out.to_ndarray()[0])
+    for out in resampler.resample(None):
+        chunks.append(out.to_ndarray()[0])
+    container.close()
+    audio = np.concatenate(chunks) if chunks else np.array([], dtype=np.float32)
+    return audio.astype(np.float32), sr
 
 
 def build_wav_filename(speaker_id: str, index: int) -> str:
@@ -40,6 +60,7 @@ def export_speaker(speaker_id: str, output_dir: Path) -> None:
                 streaming=True,
                 trust_remote_code=False,
             )
+            ds = ds.cast_column("audio", Audio(decode=False))
         except Exception as e:
             print(f"  Skipping split '{split}': {e}")
             continue
@@ -47,10 +68,19 @@ def export_speaker(speaker_id: str, output_dir: Path) -> None:
         speaker_clips = ds.filter(lambda x, sid=speaker_id: str(x["speaker_id"]) == str(sid))
 
         for sample in tqdm(speaker_clips, desc=f"  {split}"):
-            audio_array = sample["audio"]["array"]
-            source_sr = sample["audio"]["sampling_rate"]
-            duration = len(audio_array) / source_sr
+            audio_raw = sample["audio"]
+            if not audio_raw.get("bytes"):
+                skipped += 1
+                continue
 
+            try:
+                audio_array, source_sr = decode_audio_bytes(audio_raw["bytes"])
+            except Exception as e:
+                print(f"  Warning: omitiendo clip (decode error: {e})")
+                skipped += 1
+                continue
+
+            duration = len(audio_array) / source_sr
             if duration < MIN_DURATION_SECONDS:
                 skipped += 1
                 continue
@@ -60,9 +90,10 @@ def export_speaker(speaker_id: str, output_dir: Path) -> None:
                 wav_name = build_wav_filename(speaker_id, clip_index)
                 save_wav(processed, target_sr, wavs_dir / wav_name)
             except Exception as e:
-                print(f"  Warning: omitiendo clip (error: {e})")
+                print(f"  Warning: omitiendo clip (process error: {e})")
                 skipped += 1
                 continue
+
             metadata_entries.append((f"wavs/{wav_name}", sample["text"]))
             clip_index += 1
 

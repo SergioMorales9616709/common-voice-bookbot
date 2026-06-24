@@ -1,5 +1,8 @@
+import io
+import numpy as np
+import soundfile as sf
 from pathlib import Path
-from exportar_dataset import build_wav_filename, write_metadata_csv
+from exportar_dataset import build_wav_filename, write_metadata_csv, decode_audio_bytes
 
 
 def test_build_wav_filename_zero_padded():
@@ -36,3 +39,32 @@ def test_write_metadata_csv_utf8_encoding(tmp_path: Path):
     write_metadata_csv(entries, out)
     content = out.read_text(encoding="utf-8")
     assert "El niño jugó en el jardín." in content
+
+
+def _make_wav_bytes(duration_s: float = 1.0, sr: int = 22050) -> bytes:
+    t = np.linspace(0, duration_s, int(sr * duration_s), endpoint=False)
+    audio = (np.sin(2 * np.pi * 440 * t) * 0.1).astype(np.float32)
+    buf = io.BytesIO()
+    sf.write(buf, audio, sr, format="wav", subtype="FLOAT")
+    return buf.getvalue()
+
+
+def test_decode_audio_bytes_returns_float32():
+    audio, sr = decode_audio_bytes(_make_wav_bytes())
+    assert audio.dtype == np.float32
+
+
+def test_decode_audio_bytes_correct_samplerate():
+    audio, sr = decode_audio_bytes(_make_wav_bytes(sr=22050))
+    assert sr == 22050
+
+
+def test_decode_audio_bytes_mono_output():
+    audio, sr = decode_audio_bytes(_make_wav_bytes())
+    assert audio.ndim == 1
+
+
+def test_decode_audio_bytes_correct_duration():
+    audio, sr = decode_audio_bytes(_make_wav_bytes(duration_s=1.5, sr=16000))
+    assert sr == 16000
+    assert abs(len(audio) / sr - 1.5) < 0.05  # within 50ms
