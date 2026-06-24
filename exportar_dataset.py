@@ -5,14 +5,21 @@ from pathlib import Path
 
 import av
 import numpy as np
+import pyarrow.parquet as pq
 from dotenv import load_dotenv
-from datasets import load_dataset, Audio
+from huggingface_hub import HfFileSystem
 from tqdm import tqdm
 
 from audio_utils import process_clip, save_wav
 
 load_dotenv()
 
+HF_BASE = "datasets/facebook/multilingual_librispeech/spanish"
+SPLIT_PATTERNS = {
+    "train": "train-*.parquet",
+    "dev":   "dev-*.parquet",
+    "test":  "test-*.parquet",
+}
 MIN_DURATION_SECONDS = 0.5
 
 
@@ -44,67 +51,90 @@ def write_metadata_csv(entries: list[tuple[str, str]], path: Path) -> None:
             f.write(f"{filename}|{text}\n")
 
 
-def export_speaker(speaker_id: str, output_dir: Path) -> None:
-    wavs_dir = output_dir / "wavs"
+def _process_shard(
+    fs: HfFileSystem,
+    shard_path: str,
+    speaker_id: str,
+    wavs_dir: Path,
+    clip_index: int,
+) -> tuple[list[tuple[str, str]], int, int]:
+    """Download one shard, process all clips for the speaker. Returns (entries, next_index, skipped)."""
+    with fs.open(shard_path, "rb") as fh:
+        table = pq.read_table(fh, columns=["speaker_id", "audio", "text"])
 
-    metadata_entries: list[tuple[str, str]] = []
-    clip_index = 1
+    entries: list[tuple[str, str]] = []
     skipped = 0
 
-    for split in ["train", "dev", "test"]:
-        try:
-            ds = load_dataset(
-                "facebook/multilingual_librispeech",
-                "spanish",
-                split=split,
-                streaming=True,
-                trust_remote_code=False,
-            )
-            ds = ds.cast_column("audio", Audio(decode=False))
-        except Exception as e:
-            print(f"  Skipping split '{split}': {e}")
+    rows = [i for i in range(len(table)) if str(table["speaker_id"][i].as_py()) == speaker_id]
+    for i in tqdm(rows, desc=f"    clips", leave=False, unit="clip"):
+        audio_raw = table["audio"][i].as_py()
+        audio_bytes = audio_raw.get("bytes") if isinstance(audio_raw, dict) else None
+        if not audio_bytes:
+            skipped += 1
             continue
 
-        speaker_clips = ds.filter(lambda x, sid=speaker_id: str(x["speaker_id"]) == str(sid))
+        try:
+            audio_array, source_sr = decode_audio_bytes(audio_bytes)
+        except Exception as e:
+            print(f"      Warning: decode error ({e})")
+            skipped += 1
+            continue
 
-        for sample in tqdm(speaker_clips, desc=f"  {split}"):
-            audio_raw = sample["audio"]
-            if not audio_raw.get("bytes"):
-                skipped += 1
-                continue
+        duration = len(audio_array) / source_sr
+        if duration < MIN_DURATION_SECONDS:
+            skipped += 1
+            continue
 
+        try:
+            processed, target_sr = process_clip(audio_array, source_sr)
+            wav_name = build_wav_filename(speaker_id, clip_index)
+            save_wav(processed, target_sr, wavs_dir / wav_name)
+        except Exception as e:
+            print(f"      Warning: process error ({e})")
+            skipped += 1
+            continue
+
+        entries.append((f"wavs/{wav_name}", str(table["text"][i].as_py())))
+        clip_index += 1
+
+    return entries, clip_index, skipped
+
+
+def export_speaker(speaker_id: str, output_dir: Path) -> None:
+    wavs_dir = output_dir / "wavs"
+    fs = HfFileSystem()
+
+    all_entries: list[tuple[str, str]] = []
+    clip_index = 1
+    total_skipped = 0
+
+    for split, pattern in SPLIT_PATTERNS.items():
+        shards = sorted(fs.glob(f"{HF_BASE}/{pattern}"))
+        if not shards:
+            continue
+        print(f"\n  Split '{split}': {len(shards)} shard(s)")
+        for idx, shard in enumerate(shards, 1):
+            print(f"  [{idx}/{len(shards)}] Descargando {Path(shard).name}...", flush=True)
             try:
-                audio_array, source_sr = decode_audio_bytes(audio_raw["bytes"])
+                entries, clip_index, skipped = _process_shard(
+                    fs, shard, speaker_id, wavs_dir, clip_index
+                )
             except Exception as e:
-                print(f"  Warning: omitiendo clip (decode error: {e})")
-                skipped += 1
+                print(f"      Error en shard: {e}")
                 continue
+            all_entries.extend(entries)
+            total_skipped += skipped
+            if entries:
+                print(f"      +{len(entries)} clips (total: {len(all_entries)})")
 
-            duration = len(audio_array) / source_sr
-            if duration < MIN_DURATION_SECONDS:
-                skipped += 1
-                continue
-
-            try:
-                processed, target_sr = process_clip(audio_array, source_sr)
-                wav_name = build_wav_filename(speaker_id, clip_index)
-                save_wav(processed, target_sr, wavs_dir / wav_name)
-            except Exception as e:
-                print(f"  Warning: omitiendo clip (process error: {e})")
-                skipped += 1
-                continue
-
-            metadata_entries.append((f"wavs/{wav_name}", sample["text"]))
-            clip_index += 1
-
-    if not metadata_entries:
+    if not all_entries:
         print(f"\nError: no se encontraron clips para speaker_id='{speaker_id}'.")
         print("Ejecuta analizar_mls.py para ver speaker_ids válidos.")
         sys.exit(1)
 
-    write_metadata_csv(metadata_entries, output_dir / "metadata.csv")
-    print(f"\nExportados : {len(metadata_entries)} clips")
-    print(f"Omitidos   : {skipped} clips")
+    write_metadata_csv(all_entries, output_dir / "metadata.csv")
+    print(f"\nExportados : {len(all_entries)} clips")
+    print(f"Omitidos   : {total_skipped} clips")
     print(f"Dataset en : {output_dir.resolve()}")
 
 
@@ -114,7 +144,8 @@ def main() -> None:
     )
     parser.add_argument("--speaker", required=True, help="speaker_id de MLS (ej: 2138)")
     parser.add_argument(
-        "--output", default="./data/dataset", help="Directorio de salida (default: ./data/dataset)"
+        "--output", default="./data/dataset",
+        help="Directorio de salida (default: ./data/dataset)"
     )
     args = parser.parse_args()
     export_speaker(args.speaker, Path(args.output))
