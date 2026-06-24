@@ -12,13 +12,22 @@ tasks:
       - uv run analizar_mls.py
 
   probar:
-    desc: "Download N sample clips from a speaker to ./preview/<id>/ — usage: task probar SPEAKER=<id> [N=5]"
+    desc: "Sample clips from a speaker to ./preview/<id>/ — usage: task probar SPEAKER=<id> [N=5]"
     requires:
       vars: [SPEAKER]
     vars:
       N: '{{.N | default "5"}}'
     cmds:
       - uv run probar_speaker.py --speaker {{.SPEAKER}} --n {{.N}}
+
+  probar-full:
+    desc: "Same as probar but also scans train shards (3-5 min/shard, cached after first run)"
+    requires:
+      vars: [SPEAKER]
+    vars:
+      N: '{{.N | default "5"}}'
+    cmds:
+      - uv run probar_speaker.py --speaker {{.SPEAKER}} --n {{.N}} --full-scan
 
   exportar:
     desc: "Export a speaker's clips as a LJSpeech dataset — usage: task exportar SPEAKER=<id>"
