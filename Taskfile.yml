@@ -1,0 +1,40 @@
+version: '3'
+
+tasks:
+  sync:
+    desc: Install project dependencies
+    cmds:
+      - uv sync
+
+  analizar:
+    desc: Show top female speakers from MLS Spanish (ranked by minutes)
+    cmds:
+      - uv run analizar_mls.py
+
+  exportar:
+    desc: "Export a speaker's clips as a LJSpeech dataset — usage: task exportar SPEAKER=<id>"
+    requires:
+      vars: [SPEAKER]
+    cmds:
+      - uv run exportar_dataset.py --speaker {{.SPEAKER}}
+
+  exportar-custom:
+    desc: "Export with custom output dir — usage: task exportar-custom SPEAKER=<id> OUTPUT=./my/path"
+    requires:
+      vars: [SPEAKER, OUTPUT]
+    cmds:
+      - uv run exportar_dataset.py --speaker {{.SPEAKER}} --output {{.OUTPUT}}
+
+  test:
+    desc: Run all tests
+    cmds:
+      - uv run pytest tests/ -v
+
+  clean:
+    desc: Remove generated dataset directory (./data/)
+    prompt: This will delete ./data/ — are you sure?
+    cmds:
+      - cmd: powershell -Command "Remove-Item -Recurse -Force data -ErrorAction SilentlyContinue"
+        platforms: [windows]
+      - cmd: rm -rf data/
+        platforms: [linux, darwin]
