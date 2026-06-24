@@ -1,5 +1,6 @@
-from mls_metadata import download_speaker_metadata, get_female_speakers
 import sys
+
+from mls_metadata import download_speaker_metadata, get_female_speakers
 
 print("\n--- Descargando metadatos de hablantes MLS Spanish ---")
 df = download_speaker_metadata()
@@ -23,5 +24,5 @@ for i, row in top.iterrows():
     print(f"{i + 1:<4} {row['speaker_id']:<14} {row['minutes']:>10.1f}")
 
 best = top.iloc[0]["speaker_id"]
-print(f"\nPara exportar la hablante con más audio:")
+print("\nPara exportar la hablante con más audio:")
 print(f"  uv run exportar_dataset.py --speaker {best}")

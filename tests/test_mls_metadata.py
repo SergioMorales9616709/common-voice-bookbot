@@ -1,6 +1,7 @@
 import pandas as pd
 import pytest
-from mls_metadata import parse_metainfo, get_female_speakers
+
+from mls_metadata import get_female_speakers, parse_metainfo
 
 # Real format: pipe-separated, header row, one row per book chapter.
 # Multiple rows per speaker — minutes must be aggregated.
@@ -53,9 +54,11 @@ def test_get_female_speakers_sorted_desc():
 
 # --- Integration tests (require internet + HF_TOKEN in .env) ---
 
+
 @pytest.mark.integration
 def test_download_speaker_metadata_returns_valid_dataframe():
     from mls_metadata import download_speaker_metadata
+
     df = download_speaker_metadata()
     assert not df.empty
     assert list(df.columns) == ["speaker_id", "gender", "minutes"]
@@ -66,6 +69,7 @@ def test_download_speaker_metadata_returns_valid_dataframe():
 @pytest.mark.integration
 def test_download_speaker_metadata_has_female_speakers():
     from mls_metadata import download_speaker_metadata, get_female_speakers
+
     df = download_speaker_metadata()
     females = get_female_speakers(df)
     assert not females.empty

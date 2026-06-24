@@ -17,8 +17,8 @@ load_dotenv()
 HF_BASE = "datasets/facebook/multilingual_librispeech/spanish"
 SPLIT_PATTERNS = {
     "train": "train-*.parquet",
-    "dev":   "dev-*.parquet",
-    "test":  "test-*.parquet",
+    "dev": "dev-*.parquet",
+    "test": "test-*.parquet",
 }
 MIN_DURATION_SECONDS = 0.5
 
@@ -27,11 +27,11 @@ def decode_audio_bytes(audio_bytes: bytes) -> tuple[np.ndarray, int]:
     """Decode raw audio bytes (any format including Opus) to float32 mono array."""
     container = av.open(io.BytesIO(audio_bytes), metadata_errors="ignore")
     stream = next(s for s in container.streams if s.type == "audio")
-    sr = stream.sample_rate
+    sr: int = stream.sample_rate  # type: ignore[attr-defined]
     resampler = av.AudioResampler(format="fltp", layout="mono", rate=sr)
     chunks = []
-    for frame in container.decode(stream):
-        for out in resampler.resample(frame):
+    for frame in container.decode(stream):  # type: ignore[union-attr]
+        for out in resampler.resample(frame):  # type: ignore[arg-type]
             chunks.append(out.to_ndarray()[0])
     for out in resampler.resample(None):
         chunks.append(out.to_ndarray()[0])
@@ -66,7 +66,7 @@ def _process_shard(
     skipped = 0
 
     rows = [i for i in range(len(table)) if str(table["speaker_id"][i].as_py()) == speaker_id]
-    for i in tqdm(rows, desc=f"    clips", leave=False, unit="clip"):
+    for i in tqdm(rows, desc="    clips", leave=False, unit="clip"):
         audio_raw = table["audio"][i].as_py()
         audio_bytes = audio_raw.get("bytes") if isinstance(audio_raw, dict) else None
         if not audio_bytes:
@@ -144,8 +144,7 @@ def main() -> None:
     )
     parser.add_argument("--speaker", required=True, help="speaker_id de MLS (ej: 2138)")
     parser.add_argument(
-        "--output", default=None,
-        help="Directorio de salida (default: ./data/<speaker_id>)"
+        "--output", default=None, help="Directorio de salida (default: ./data/<speaker_id>)"
     )
     args = parser.parse_args()
     output = Path(args.output) if args.output else Path("./data") / args.speaker

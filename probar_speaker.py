@@ -7,6 +7,7 @@ Search order (fastest to slowest):
 Train shards are only scanned if --full-scan is passed, since each takes 3-5 min.
 Once downloaded, HuggingFace caches shards locally — subsequent runs are instant.
 """
+
 import argparse
 from pathlib import Path
 
@@ -14,8 +15,8 @@ import pyarrow.parquet as pq
 from dotenv import load_dotenv
 from huggingface_hub import HfFileSystem
 
-from exportar_dataset import decode_audio_bytes
 from audio_utils import process_clip, save_wav
+from exportar_dataset import decode_audio_bytes
 
 load_dotenv()
 
@@ -38,10 +39,12 @@ def _load_shard_clips(fs: HfFileSystem, path: str, speaker_id: str, max_clips: i
     results = []
     for i in range(len(table)):
         if str(table["speaker_id"][i].as_py()) == speaker_id:
-            results.append({
-                "audio": table["audio"][i].as_py(),
-                "transcript":  str(table["transcript"][i].as_py()),
-            })
+            results.append(
+                {
+                    "audio": table["audio"][i].as_py(),
+                    "transcript": str(table["transcript"][i].as_py()),
+                }
+            )
             if len(results) >= max_clips:
                 break
     return results
@@ -61,7 +64,9 @@ def _save_clips(clips: list[dict], out_dir: Path, start_index: int) -> int:
             out_path = out_dir / f"{idx}.wav"
             save_wav(processed, target_sr, out_path)
             duration = len(processed) / target_sr
-            print(f"  [{start_index + saved + 1}] {out_path.name}  {duration:.1f}s  \"{clip['text'][:70]}\"")
+            print(
+                f'  [{start_index + saved + 1}] {out_path.name}  {duration:.1f}s  "{clip["text"][:70]}"'
+            )
             saved += 1
         except Exception as e:
             print(f"  Warning: clip omitido ({e})")
@@ -69,14 +74,13 @@ def _save_clips(clips: list[dict], out_dir: Path, start_index: int) -> int:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Descarga N clips de muestra de un hablante MLS"
-    )
+    parser = argparse.ArgumentParser(description="Descarga N clips de muestra de un hablante MLS")
     parser.add_argument("--speaker", required=True, help="speaker_id (ej: 1447)")
     parser.add_argument("--n", type=int, default=5, help="Número de clips (default: 5)")
     parser.add_argument(
-        "--full-scan", action="store_true",
-        help="Escanear también shards de train (3-5 min por shard, cached tras primer uso)"
+        "--full-scan",
+        action="store_true",
+        help="Escanear también shards de train (3-5 min por shard, cached tras primer uso)",
     )
     args = parser.parse_args()
 
@@ -126,7 +130,7 @@ def main() -> None:
                 if saved >= args.n:
                     break
                 name = Path(shard).name
-                print(f"  [{i+1}/{total}] {name}...", end=" ", flush=True)
+                print(f"  [{i + 1}/{total}] {name}...", end=" ", flush=True)
                 try:
                     clips = _load_shard_clips(fs, shard, speaker_id, args.n - saved)
                 except Exception as e:

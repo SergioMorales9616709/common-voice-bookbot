@@ -46,6 +46,16 @@ tasks:
     cmds:
       - uv run pytest tests/ -v -m integration
 
+  precommit:
+    desc: Run pre-commit hooks on staged files (same as what runs on git commit)
+    cmds:
+      - uv run pre-commit run
+
+  lint:
+    desc: Run all pre-commit hooks on all files (lint, format, typecheck, tests)
+    cmds:
+      - uv run pre-commit run --all-files
+
   clean:
     desc: Remove generated dataset directory (./data/)
     prompt: This will delete ./data/ — are you sure?

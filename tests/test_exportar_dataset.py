@@ -1,8 +1,10 @@
 import io
+from pathlib import Path
+
 import numpy as np
 import soundfile as sf
-from pathlib import Path
-from exportar_dataset import build_wav_filename, write_metadata_csv, decode_audio_bytes
+
+from exportar_dataset import build_wav_filename, decode_audio_bytes, write_metadata_csv
 
 
 def test_build_wav_filename_zero_padded():

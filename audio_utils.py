@@ -1,8 +1,9 @@
-import numpy as np
+from pathlib import Path
+
 import librosa
+import numpy as np
 import pyloudnorm as pyln
 import soundfile as sf
-from pathlib import Path
 
 TARGET_SR = 22050
 TARGET_LUFS = -23.0

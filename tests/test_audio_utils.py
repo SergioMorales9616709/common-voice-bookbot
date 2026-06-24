@@ -1,8 +1,10 @@
+from pathlib import Path
+
 import numpy as np
+import pyloudnorm as pyln
 import pytest
 import soundfile as sf
-import pyloudnorm as pyln
-from pathlib import Path
+
 from audio_utils import process_clip, save_wav
 
 TARGET_SR = 22050
