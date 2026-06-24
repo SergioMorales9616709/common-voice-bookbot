@@ -29,3 +29,13 @@ A `HF_TOKEN` env var is required for authenticated HuggingFace downloads. It is 
 `analizar_mls.py` descarga el archivo `spanish/metainfo.txt` del repositorio MLS en HuggingFace Hub para obtener el ranking de hablantes sin descargar el audio (~220 GB). `exportar_dataset.py` usa la librería `datasets` con `streaming=True` para descargar solo los clips de la hablante elegida.
 
 El audio se procesa en Python puro (sin ffmpeg): `librosa` para resample a 22050 Hz mono, `pyloudnorm` para normalización EBU R128 (-23 LUFS), y `soundfile` para escribir WAV PCM_16.
+
+## graphify
+
+This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
+
+Rules:
+- For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
+- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
+- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
+- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).

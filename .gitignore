@@ -6,6 +6,7 @@
 
 # Datos descargados y datasets generados
 data/
+graphify-out/
 *.wav
 *.mp3
 *.flac
