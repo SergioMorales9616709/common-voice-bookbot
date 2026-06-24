@@ -26,9 +26,14 @@ tasks:
       - uv run exportar_dataset.py --speaker {{.SPEAKER}} --output {{.OUTPUT}}
 
   test:
-    desc: Run all tests
+    desc: Run unit tests (no network required)
     cmds:
-      - uv run pytest tests/ -v
+      - uv run pytest tests/ -v -m "not integration"
+
+  test-integration:
+    desc: Run integration tests — requires internet and HF_TOKEN in .env
+    cmds:
+      - uv run pytest tests/ -v -m integration
 
   clean:
     desc: Remove generated dataset directory (./data/)

@@ -2,7 +2,10 @@ import argparse
 import sys
 from pathlib import Path
 
+from dotenv import load_dotenv
 from datasets import load_dataset
+
+load_dotenv()
 from tqdm import tqdm
 
 from audio_utils import process_clip, save_wav
