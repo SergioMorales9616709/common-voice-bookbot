@@ -60,7 +60,7 @@ def _process_shard(
 ) -> tuple[list[tuple[str, str]], int, int]:
     """Download one shard, process all clips for the speaker. Returns (entries, next_index, skipped)."""
     with fs.open(shard_path, "rb") as fh:
-        table = pq.read_table(fh, columns=["speaker_id", "audio", "text"])
+        table = pq.read_table(fh, columns=["speaker_id", "audio", "transcript"])
 
     entries: list[tuple[str, str]] = []
     skipped = 0
@@ -94,7 +94,7 @@ def _process_shard(
             skipped += 1
             continue
 
-        entries.append((f"wavs/{wav_name}", str(table["text"][i].as_py())))
+        entries.append((f"wavs/{wav_name}", str(table["transcript"][i].as_py())))
         clip_index += 1
 
     return entries, clip_index, skipped

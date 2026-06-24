@@ -34,13 +34,13 @@ TRAIN_PATTERN = "train-*.parquet"
 def _load_shard_clips(fs: HfFileSystem, path: str, speaker_id: str, max_clips: int) -> list[dict]:
     """Download a parquet shard and return up to max_clips rows for the speaker."""
     with fs.open(path, "rb") as fh:
-        table = pq.read_table(fh, columns=["speaker_id", "audio", "text"])
+        table = pq.read_table(fh, columns=["speaker_id", "audio", "transcript"])
     results = []
     for i in range(len(table)):
         if str(table["speaker_id"][i].as_py()) == speaker_id:
             results.append({
                 "audio": table["audio"][i].as_py(),
-                "text":  str(table["text"][i].as_py()),
+                "transcript":  str(table["transcript"][i].as_py()),
             })
             if len(results) >= max_clips:
                 break
