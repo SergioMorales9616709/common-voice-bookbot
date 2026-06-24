@@ -23,7 +23,6 @@ def write_metadata_csv(entries: list[tuple[str, str]], path: Path) -> None:
 
 def export_speaker(speaker_id: str, output_dir: Path) -> None:
     wavs_dir = output_dir / "wavs"
-    wavs_dir.mkdir(parents=True, exist_ok=True)
 
     metadata_entries: list[tuple[str, str]] = []
     clip_index = 1
@@ -42,7 +41,7 @@ def export_speaker(speaker_id: str, output_dir: Path) -> None:
             print(f"  Skipping split '{split}': {e}")
             continue
 
-        speaker_clips = ds.filter(lambda x: x["speaker_id"] == speaker_id)
+        speaker_clips = ds.filter(lambda x: str(x["speaker_id"]) == str(speaker_id))
 
         for sample in tqdm(speaker_clips, desc=f"  {split}"):
             audio_array = sample["audio"]["array"]
@@ -55,13 +54,12 @@ def export_speaker(speaker_id: str, output_dir: Path) -> None:
 
             try:
                 processed, target_sr = process_clip(audio_array, source_sr)
+                wav_name = build_wav_filename(speaker_id, clip_index)
+                save_wav(processed, target_sr, wavs_dir / wav_name)
             except Exception as e:
                 print(f"  Warning: omitiendo clip (error: {e})")
                 skipped += 1
                 continue
-
-            wav_name = build_wav_filename(speaker_id, clip_index)
-            save_wav(processed, target_sr, wavs_dir / wav_name)
             metadata_entries.append((f"wavs/{wav_name}", sample["text"]))
             clip_index += 1
 
