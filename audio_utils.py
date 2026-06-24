@@ -9,6 +9,8 @@ TARGET_LUFS = -23.0
 
 
 def process_clip(audio: np.ndarray, source_sr: int) -> tuple[np.ndarray, int]:
+    if audio.ndim > 1:
+        audio = audio.mean(axis=0).astype(np.float32)
     if source_sr != TARGET_SR:
         audio = librosa.resample(audio, orig_sr=source_sr, target_sr=TARGET_SR)
     meter = pyln.Meter(TARGET_SR)

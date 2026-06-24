@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project purpose
 
-Tooling to download, inspect, and extract speaker data from the [Bookbot Common Voice 16.1 Spanish sample dataset](https://huggingface.co/datasets/bookbot/common_voice_16_1_es_sample) on HuggingFace. The goal is to identify individual speakers with enough clips for voice cloning or TTS training.
+Tooling to download, prepare, and export a single-speaker female Spanish voice dataset from [Multilingual LibriSpeech (MLS)](https://huggingface.co/datasets/facebook/multilingual_librispeech) on HuggingFace. The goal is to produce a LJSpeech-format dataset ready for training a piper-tts ONNX voice model.
 
 ## Environment setup
 
@@ -26,4 +26,6 @@ A `HF_TOKEN` env var is required for authenticated HuggingFace downloads. It is 
 
 ## Architecture notes
 
-The dataset is downloaded via `huggingface_hub.snapshot_download` and cached locally by HuggingFace's cache mechanism. The metadata is in `metadata.csv` inside the snapshot directory. Speaker identity is tracked by the `client_id` column. Audio files are referenced in the metadata and can be loaded with `librosa` or `soundfile`.
+`analizar_mls.py` descarga el archivo `spanish/metainfo.txt` del repositorio MLS en HuggingFace Hub para obtener el ranking de hablantes sin descargar el audio (~220 GB). `exportar_dataset.py` usa la librería `datasets` con `streaming=True` para descargar solo los clips de la hablante elegida.
+
+El audio se procesa en Python puro (sin ffmpeg): `librosa` para resample a 22050 Hz mono, `pyloudnorm` para normalización EBU R128 (-23 LUFS), y `soundfile` para escribir WAV PCM_16.

@@ -41,7 +41,7 @@ def export_speaker(speaker_id: str, output_dir: Path) -> None:
             print(f"  Skipping split '{split}': {e}")
             continue
 
-        speaker_clips = ds.filter(lambda x: str(x["speaker_id"]) == str(speaker_id))
+        speaker_clips = ds.filter(lambda x, sid=speaker_id: str(x["speaker_id"]) == str(sid))
 
         for sample in tqdm(speaker_clips, desc=f"  {split}"):
             audio_array = sample["audio"]["array"]
