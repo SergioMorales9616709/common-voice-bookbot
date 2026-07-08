@@ -52,7 +52,7 @@ def test_get_top_female_speakers_columns(tmp_path: Path):
     from cv_metadata import get_top_female_speakers
 
     df = get_top_female_speakers(tmp_path, n=10)
-    assert list(df.columns) == ["client_id", "clips", "minutes"]
+    assert list(df.columns) == ["client_id", "gender", "clips", "minutes"]
 
 
 def test_get_top_female_speakers_excludes_males(tmp_path: Path):

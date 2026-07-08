@@ -18,11 +18,12 @@ if df.empty:
     sys.exit(1)
 
 print("\nTop hablantes femeninas en Common Voice Spanish (por minutos estimados):\n")
-print(f"{'#':<4} {'client_id':<20} {'clips':>8} {'minutos':>10}")
+print(f"{'#':<4} {'gender':<16} {'clips':>8} {'minutos':>10}  client_id")
 print("-" * 46)
 for i, row in df.iterrows():
-    short_id = row["client_id"][:16] + "..." if len(row["client_id"]) > 16 else row["client_id"]
-    print(f"{i + 1:<4} {short_id:<20} {int(row['clips']):>8} {row['minutes']:>10.1f}")
+    print(
+        f"{i + 1:<4} {row['gender']:<16} {int(row['clips']):>8} {row['minutes']:>10.1f}  {row['client_id']}"
+    )
 
 best = df.iloc[0]["client_id"]
 print("\nPara exportar la hablante con más audio:")
