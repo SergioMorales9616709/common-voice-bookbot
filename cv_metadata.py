@@ -25,7 +25,7 @@ def get_top_female_speakers(data_dir: Path, n: int = 20) -> pd.DataFrame:
     """Return top-n female speakers sorted by estimated minutes."""
     tsv_path = find_clips_tsv(data_dir)
     df = pd.read_csv(tsv_path, sep="\t", dtype=str, usecols=["client_id", "gender"])
-    females = df[df["gender"] == "female"]
+    females = df[df["gender"] == "female_feminine"]
     counts = females.groupby("client_id", as_index=False).size().rename(columns={"size": "clips"})
     counts["clips"] = counts["clips"].astype(int)
     counts["minutes"] = counts["clips"] * SECONDS_PER_CLIP / 60

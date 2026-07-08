@@ -4,10 +4,11 @@ import pytest
 
 TSV_CONTENT = (
     "client_id\tpath\tgender\tsentence\n"
-    "abc123\tclips/001.mp3\tfemale\tHola mundo.\n"
-    "abc123\tclips/002.mp3\tfemale\tEl cielo es azul.\n"
-    "def456\tclips/003.mp3\tmale\tEl río corre.\n"
-    "xyz789\tclips/004.mp3\tfemale\tLa casa.\n"
+    "abc123\tclips/001.mp3\tfemale_feminine\tHola mundo.\n"
+    "abc123\tclips/002.mp3\tfemale_feminine\tEl cielo es azul.\n"
+    "def456\tclips/003.mp3\tmale_masculine\tEl río corre.\n"
+    "xyz789\tclips/004.mp3\tfemale_feminine\tLa casa.\n"
+    "ghi000\tclips/005.mp3\t\tSin género declarado.\n"
 )
 
 
@@ -75,7 +76,7 @@ def test_get_top_female_speakers_minutes(tmp_path: Path):
 def test_get_top_female_speakers_respects_n(tmp_path: Path):
     lines = ["client_id\tpath\tgender\tsentence"]
     for i in range(10):
-        lines.append(f"speaker_{i:03d}\tclips/{i:03d}.mp3\tfemale\tText {i}")
+        lines.append(f"speaker_{i:03d}\tclips/{i:03d}.mp3\tfemale_feminine\tText {i}")
     (tmp_path / "clips.tsv").write_text("\n".join(lines), encoding="utf-8")
     from cv_metadata import get_top_female_speakers
 
