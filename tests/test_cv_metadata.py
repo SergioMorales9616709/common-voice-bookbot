@@ -30,6 +30,16 @@ def test_find_clips_tsv_finds_file_in_subdirectory(tmp_path: Path):
     assert find_clips_tsv(tmp_path) == tsv
 
 
+def test_find_clips_tsv_prefers_validated_over_other_splits(tmp_path: Path):
+    (tmp_path / "dev.tsv").write_text(TSV_CONTENT, encoding="utf-8")
+    (tmp_path / "other.tsv").write_text(TSV_CONTENT, encoding="utf-8")
+    validated = tmp_path / "validated.tsv"
+    validated.write_text(TSV_CONTENT, encoding="utf-8")
+    from cv_metadata import find_clips_tsv
+
+    assert find_clips_tsv(tmp_path) == validated
+
+
 def test_find_clips_tsv_raises_when_not_found(tmp_path: Path):
     from cv_metadata import find_clips_tsv
 

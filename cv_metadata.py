@@ -7,15 +7,28 @@ _REQUIRED_COLS = {"client_id", "path", "gender", "sentence"}
 
 
 def find_clips_tsv(data_dir: Path) -> Path:
-    """Return the first TSV in data_dir that has the required CV columns."""
+    """Return the CV clips TSV in data_dir with the required columns.
+
+    Prefers a file named "validated.tsv" (the full community-validated
+    corpus) over other splits like dev/test/train, which cap clips per
+    speaker to keep those splits balanced and are much smaller.
+    """
+    candidates = []
     for tsv in sorted(data_dir.rglob("*.tsv")):
         try:
             with tsv.open(encoding="utf-8") as f:
                 header = f.readline()
             if _REQUIRED_COLS.issubset(set(header.rstrip("\n").split("\t"))):
-                return tsv
+                candidates.append(tsv)
         except OSError:
             continue
+
+    for tsv in candidates:
+        if tsv.name == "validated.tsv":
+            return tsv
+    if candidates:
+        return candidates[0]
+
     raise FileNotFoundError(
         f"No se encontró un TSV de clips de Common Voice en {data_dir}. Ejecuta: task descargar-cv"
     )
