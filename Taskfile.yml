@@ -6,10 +6,20 @@ tasks:
     cmds:
       - uv sync
 
+  descargar-cv:
+    desc: "Descarga Common Voice Scripted Speech 26.0 Spanish a ./data/cv-raw/ (48 GB, reanudable)"
+    cmds:
+      - uv run descargar_cv.py
+
   analizar:
     desc: Show top female speakers from MLS Spanish (ranked by minutes)
     cmds:
       - uv run analizar_mls.py
+
+  analizar-cv:
+    desc: Show top female speakers from Common Voice Spanish (ranked by estimated minutes)
+    cmds:
+      - uv run analizar_cv.py
 
   probar:
     desc: "Sample clips from a speaker to ./preview/<id>/ — usage: task probar SPEAKER=<id> [N=5]"
@@ -35,6 +45,13 @@ tasks:
       vars: [SPEAKER]
     cmds:
       - uv run exportar_dataset.py --speaker {{.SPEAKER}}
+
+  exportar-cv:
+    desc: "Export a Common Voice speaker's clips to ./data/<client_id[:8]>/ — usage: task exportar-cv SPEAKER=<client_id>"
+    requires:
+      vars: [SPEAKER]
+    cmds:
+      - uv run exportar_cv.py --speaker {{.SPEAKER}}
 
   test:
     desc: Run unit tests (no network required)

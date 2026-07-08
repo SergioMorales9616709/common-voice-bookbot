@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project purpose
 
-Tooling to download, prepare, and export a single-speaker female Spanish voice dataset from [Multilingual LibriSpeech (MLS)](https://huggingface.co/datasets/facebook/multilingual_librispeech) on HuggingFace. The goal is to produce a LJSpeech-format dataset ready for training a piper-tts ONNX voice model.
+Tooling to download, prepare, and export single-speaker female Spanish voice datasets from [Multilingual LibriSpeech (MLS)](https://huggingface.co/datasets/facebook/multilingual_librispeech) and [Mozilla Common Voice](https://huggingface.co/datasets/mozilla-foundation/common_voice_17_0) on HuggingFace. The goal is to produce LJSpeech-format datasets ready for training a piper-tts ONNX voice model.
 
 ## Environment setup
 
@@ -19,8 +19,18 @@ A `HF_TOKEN` env var is required for authenticated HuggingFace downloads. It is 
 
 ## Key scripts
 
+### Multilingual LibriSpeech (MLS)
+
 - `analizar_mls.py` — descarga el metainfo de MLS Spanish desde HuggingFace y muestra el top 10 de hablantes femeninas por minutos totales. Ejecutar una vez para elegir el `speaker_id` a usar.
-- `exportar_dataset.py` — exporta todos los clips de una hablante a `./data/dataset/` en formato LJSpeech (WAVs 22050 Hz + metadata.csv). Uso: `uv run exportar_dataset.py --speaker <speaker_id>`
+- `exportar_dataset.py` — exporta todos los clips de una hablante a `./data/<speaker_id>/` en formato LJSpeech (WAVs 22050 Hz + metadata.csv). Uso: `uv run exportar_dataset.py --speaker <speaker_id>`
+
+### Mozilla Common Voice
+
+- `analizar_cv.py` — descarga metadatos de Common Voice Spanish y muestra el top 10 de hablantes femeninas por minutos estimados. Ejecutar una vez para elegir el `client_id` a usar.
+- `exportar_cv.py` — exporta todos los clips de una hablante a `./data/<client_id[:8]>/` en formato LJSpeech (WAVs 22050 Hz + metadata.csv). Uso: `uv run exportar_cv.py --speaker <client_id>`
+
+### Otros
+
 - `analizar_voces.py` — script legacy para el sample de Bookbot Common Voice. Se mantiene como referencia.
 - `main.py` — placeholder.
 
